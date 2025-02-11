@@ -12,17 +12,14 @@ void ParticleSystemInit()
     allocated = 0;
 }
 
-#include <stdio.h>
 bool AllocateSystem(unsigned int numParticles, ParticleSystem & result) 
 {
-
     int totalSizeRequired = 0;
+
     totalSizeRequired =  numParticles * sizeof(Vector3); // positions
     totalSizeRequired += numParticles * sizeof(Vector3); // velocities
     totalSizeRequired += numParticles * sizeof(Vector2); // ageLifetimes
     totalSizeRequired += numParticles * sizeof(Matrix);  // transforms
-
-    printf("%d\n", totalSizeRequired);
 
     if (allocated + totalSizeRequired <= ARENA_SIZE)
     {

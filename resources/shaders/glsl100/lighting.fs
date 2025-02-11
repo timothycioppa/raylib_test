@@ -36,12 +36,17 @@ uniform float fogDensity;
 
 void main()
 {
-    vec4 texelColor = texture2D(texture0, fragTexCoord);   
+
+    vec2 uvs = fragTexCoord;
+    uvs.x = 1.0 - uvs.x;
+    uvs.y = 1.0 - uvs.y;
+    vec4 texelColor = texture2D(texture0, uvs);   
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
     vec3 specular = vec3(0.0);
     vec4 tint = colDiffuse * fragColor;
+
 
     for (int i = 0; i < MAX_LIGHTS; i++)
     {
@@ -72,13 +77,13 @@ void main()
     finalColor += texelColor*(ambient/10.0);
     finalColor = pow(finalColor, vec4(1.0 / 2.2));
 
-
     float dist = length(viewPos - fragPosition);
     const vec4 fogColor = vec4(0,0,0, 1.0);
     float fogFactor = 1.0/exp((dist*fogDensity)*(dist*fogDensity));
     fogFactor = clamp(fogFactor, 0.0, 1.0);
     finalColor = mix(fogColor, finalColor, fogFactor);
     finalColor.a = texelColor.a;
+
     gl_FragColor = finalColor;
 
 }

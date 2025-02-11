@@ -2,21 +2,29 @@
 #include "mesh_utils.hpp"
 #include <stdio.h>
 #include <string.h>
+#include "scratch.hpp"
+#include "../raylib_extensions.hpp"
 
 // load a mesh from the resources/meshes folder. 
-Mesh load_mesh(const char* filename) 
+Mesh load_mesh(const char* meshName) 
 {
     int sizeLoaded;
-    unsigned char* fileData =  LoadFileData(filename, &sizeLoaded);
-    mesh_data_header *pHeader = (mesh_data_header*) fileData;
-    unsigned char* pData = fileData + sizeof(mesh_data_header);
+
+    char* path = (char*) scratch_alloc(256);
+    sprintf(path, "resources/meshes/%s_compressed", meshName);
+    unsigned char* fileData =  LoadFileData_scratch(path, &sizeLoaded);
+    
+    int decompressedSize;
+    unsigned char* meshData = DecompressData(fileData, sizeLoaded, &decompressedSize);
+
+    mesh_data_header *pHeader = (mesh_data_header*) meshData;
+    unsigned char* pData = meshData + sizeof(mesh_data_header);
 
     Mesh mesh = {0};
     mesh.vertexCount = pHeader->vertexCount;
     mesh.triangleCount =  pHeader->tirangleCount;
 
     // initialize to start of data section
-    
     Vector3 *vertices = (Vector3*) pData;
     pData += (3 * mesh.vertexCount * sizeof(float));
     
@@ -27,6 +35,7 @@ Mesh load_mesh(const char* filename)
     pData += (3 * mesh.vertexCount * sizeof(float));
     
     unsigned short *triangles = (unsigned short* ) pData;
+
 
     mesh.vertices = (float *)RL_MALLOC(mesh.vertexCount*3*sizeof(float));
     memcpy(mesh.vertices, vertices, 3 * mesh.vertexCount * sizeof(float));
@@ -40,115 +49,74 @@ Mesh load_mesh(const char* filename)
     mesh.indices = (unsigned short *)RL_MALLOC(mesh.triangleCount*3*sizeof(unsigned short));
     memcpy(mesh.indices, triangles, mesh.triangleCount * 3 * sizeof(unsigned short));
 
+    MemFree(meshData);
     UploadMesh(&mesh, false);
-    UnloadFileData(fileData);
 
     return mesh;
 }
 
-// void generate_quad_file(const char* filename) 
-// { 
-//     #include "quad.mesh"
-    
-//     int headerSize = sizeof(mesh_data_header);
 
-//     int dataSize = 
-//         sizeof(TEST_VERTEX_DATA) +  // vec3 vertices
-//         sizeof(TEST_TEXCOORD_DATA) +  // vec2 fragcoords
-//         sizeof(TEST_NORMAL_DATA) +  // vec3 normals
-//         sizeof(TEST_INDEX_DATA) ; // unsigned short
+void prepare_mesh_file(Mesh mesh, const char* meshName) 
+{ 
+    char* path = (char*) scratch_alloc(256);
+    sprintf(path, "%s.mesh", meshName);
+    ExportMeshAsCode(mesh, path);
+}
+
+void generate_mesh_file(const char* meshName) 
+{ 
+    #define VERTEX_COUNT(name) name##_VERTEX_COUNT
+    #define TRIANGLE_COUNT(name) name##_TRIANGLE_COUNT
+    #define VERTEX_DATA(name) name##_VERTEX_DATA
+    #define NORMAL_DATA(name) name##_TEXCOORD_DATA
+    #define TEXCOORD_DATA(name) name##_NORMAL_DATA
+    #define INDEX_DATA(name) name##_INDEX_DATA
+
+    // modify this data to fit the mesh save file before loading
+    #define NUMVERTICES VERTEX_COUNT(CUBE)
+    #define NUMTRIANGLES TRIANGLE_COUNT(CUBE)
+    #define VERTICES VERTEX_DATA(CUBE)
+    #define TEXCOORDS TEXCOORD_DATA(CUBE)
+    #define NORMALS NORMAL_DATA(CUBE)
+    #define TRIANGLES INDEX_DATA(CUBE)
+    #define FILE_NAME "cube.mesh"
+
+    // nothign here should need modifying, only the block above 
+    #include FILE_NAME
+    int headerSize = sizeof(mesh_data_header);
+
+    int dataSize = 
+        sizeof(VERTICES) +      // vec3 vertices
+        sizeof(TEXCOORDS) +     // vec2 fragcoords
+        sizeof(NORMALS) +       // vec3 normals
+        sizeof(TRIANGLES) ;     // unsigned short
         
-//     unsigned char* pData = (unsigned char*) scratch_alloc(headerSize  + dataSize);
-    
-//     mesh_data_header *pHeader = (mesh_data_header *) pData;
-//     pHeader->tirangleCount = TEST_TRIANGLE_COUNT;
-//     pHeader->vertexCount = TEST_VERTEX_COUNT; 
+    unsigned char* pData = (unsigned char*) scratch_alloc(headerSize  + dataSize);
 
-//     unsigned char* head = pData + headerSize;
+    mesh_data_header *pHeader = (mesh_data_header *) pData;
+    pHeader->tirangleCount = NUMTRIANGLES;
+    pHeader->vertexCount = NUMVERTICES; 
 
-//     memcpy(
-//        head,
-//         TEST_VERTEX_DATA,  
-//         sizeof(TEST_VERTEX_DATA)
-//     );
+    unsigned char* head = pData + headerSize;
 
-//     head +=  sizeof(TEST_VERTEX_DATA);
+    memcpy(head, VERTICES, sizeof(VERTICES));
+    head +=  sizeof(VERTICES);
 
-//     memcpy(
-//         head,
-//         TEST_TEXCOORD_DATA,  
-//         sizeof(TEST_TEXCOORD_DATA)
-//     );
+    memcpy( head, TEXCOORDS, sizeof(TEXCOORDS));
+    head += sizeof(TEXCOORDS);
 
-//     head +=     sizeof(TEST_TEXCOORD_DATA);
+    memcpy(  head, NORMALS, sizeof(NORMALS));
+    head += sizeof(NORMALS);
 
-//     memcpy(
-//         head,
-//         TEST_NORMAL_DATA,  
-//         sizeof(TEST_NORMAL_DATA)
-//     );
+    memcpy(head, TRIANGLES, sizeof(TRIANGLES));
 
-//     head +=  sizeof(TEST_NORMAL_DATA);
-    
-//     memcpy(
-//         head,
-//         TEST_INDEX_DATA,  
-//         sizeof(TEST_INDEX_DATA)
-//     );
+    char* path = (char*) scratch_alloc(256);
+    sprintf(path, "resources/meshes/%s_compressed", meshName);
 
-//     SaveFileData(filename, (void*) pData, headerSize + dataSize);
-// }
+    int compressedSize;
+    unsigned char* compressedData = CompressData(pData, headerSize + dataSize, &compressedSize);
 
+    SaveFileData(path, (void*) compressedData, compressedSize);
+    MemFree(compressedData);
 
-// void generate_cube_file(const char* filename) 
-// { 
-//     #include "cube.mesh"
-    
-//     int headerSize = sizeof(mesh_data_header);
-
-//     int dataSize = 
-//         sizeof(CUBE_VERTEX_DATA) +  // vec3 vertices
-//         sizeof(CUBE_TEXCOORD_DATA) +  // vec2 fragcoords
-//         sizeof(CUBE_NORMAL_DATA) +  // vec3 normals
-//         sizeof(CUBE_INDEX_DATA) ; // unsigned short
-        
-//     unsigned char* pData = (unsigned char*) scratch_alloc(headerSize  + dataSize);
-    
-//     mesh_data_header *pHeader = (mesh_data_header *) pData;
-//     pHeader->tirangleCount = CUBE_TRIANGLE_COUNT;
-//     pHeader->vertexCount = CUBE_VERTEX_COUNT; 
-
-//     unsigned char* head = pData + headerSize;
-
-//     memcpy(
-//        head,
-//        CUBE_VERTEX_DATA,  
-//         sizeof(CUBE_VERTEX_DATA)
-//     );
-
-//     head +=  sizeof(CUBE_VERTEX_DATA);
-
-//     memcpy(
-//         head,
-//         CUBE_TEXCOORD_DATA,  
-//         sizeof(CUBE_TEXCOORD_DATA)
-//     );
-
-//     head +=     sizeof(CUBE_TEXCOORD_DATA);
-
-//     memcpy(
-//         head,
-//         CUBE_NORMAL_DATA,  
-//         sizeof(CUBE_NORMAL_DATA)
-//     );
-
-//     head +=  sizeof(CUBE_NORMAL_DATA);
-    
-//     memcpy(
-//         head,
-//         CUBE_INDEX_DATA,  
-//         sizeof(CUBE_INDEX_DATA)
-//     );
-
-//     SaveFileData(filename, (void*) pData, headerSize + dataSize);
-// }
+}

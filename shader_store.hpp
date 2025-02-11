@@ -3,6 +3,58 @@
 
 #include "include/raylib.h"
 
+class ScopedShaderBlock 
+{ 
+    public:
+        ScopedShaderBlock(Shader & s) 
+        { 
+            BeginShaderMode(s);
+        }
+        
+        ~ScopedShaderBlock() { 
+            EndShaderMode();
+        }
+};
+
+class Scoped3DBlock 
+{ 
+    public:
+        Scoped3DBlock(Camera & c) 
+        { 
+            BeginMode3D(c); 
+        }
+        
+        ~Scoped3DBlock() { 
+            EndMode3D();
+        }
+};
+
+class ScopedDrawBlock 
+{ 
+    public:
+        ScopedDrawBlock() 
+        { 
+            BeginDrawing();
+        }
+        
+        ~ScopedDrawBlock() {
+            EndDrawing();
+        }
+};
+
+class ScopedRenderTextureBlock 
+{ 
+    public:
+        ScopedRenderTextureBlock(RenderTexture2D & tex) 
+        { 
+            BeginTextureMode(tex);
+        }
+        
+        ~ScopedRenderTextureBlock() {
+            EndTextureMode();
+        }
+};
+
 enum ShaderType 
 { 
     SHADER_LIT = 0,
@@ -42,5 +94,6 @@ void PBR_SetEmissivePower(float emissiveIntensity, Shader & shader);
 void PBR_SetEmissiveColor(Color color, Shader & shader);
 void PBR_SetTiling(Vector2 tiling, Shader & shader) ;
 void PBR_InitializeMaterial(Material & mat) ;
+void setCameraPosition(Shader shader, Vector3 v) ;
 
 #endif

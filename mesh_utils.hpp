@@ -10,6 +10,8 @@ struct mesh_data_header
    unsigned int tirangleCount;
 };
 
+void prepare_mesh_file(Mesh mesh, const char* filename);
+void generate_mesh_file(const char* filename);
 Mesh load_mesh(const char* filename) ;
 
 #endif

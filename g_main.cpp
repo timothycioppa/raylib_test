@@ -1,9 +1,14 @@
 #include "g_main.hpp"
-#include "state_main.hpp"
 #include "scratch.hpp"
 #include "shader_store.hpp"
 #include "particle_system.hpp"
 #include "include/rlgl.h"
+#include "game_src/state_main.hpp"
+
+#ifdef _USE_EDITOR
+#define RAYGUI_IMPLEMENTATION
+#include "include/raygui.h"
+#endif
 
 #define MINIMUM(a, b) a < b ? a : b
 
@@ -162,23 +167,30 @@ void render_frame( GameState *currentState, GameContext & gameContext)
         OnWindowResize(gameContext);
     }
 
-    BeginTextureMode(renderTarget);
+    { ScopedRenderTextureBlock setTarget(renderTarget);
+        
         ClearBackground(clearColor);          
-        rlEnableDepthTest(); 
-        currentState->OnRender(gameContext);        
-    EndTextureMode();    
+        currentState->OnRender(gameContext);           
+    }
 
-    BeginDrawing();
+
+    { ScopedDrawBlock drawScope;
 
         ClearBackground(BLACK);    
         updateBlitRects(gameContext);
  
-        BeginShaderMode(get_postprocessor(PostProcessTypes::FX_BLOOM));        
+        
+        Shader & bloom = get_postprocessor(PostProcessTypes::FX_BLOOM);
+        float quality = 1.0f;
+        float samples = 5.0f;
+
+        SetShaderValue(bloom, GetShaderLocation(bloom, "quality"), &quality, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(bloom, GetShaderLocation(bloom, "samples"), &samples, SHADER_UNIFORM_FLOAT);
+
+
+        {
+            ScopedShaderBlock useShader(bloom);
             DrawTexturePro(renderTarget.texture, sourceRect, dstRect, { 0, 0 }, 0.0f, WHITE);    
-        EndShaderMode();
-
-    DrawFPS(20, 10);
-
-    EndDrawing();
-  
+        }
+    }
 }

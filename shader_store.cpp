@@ -33,6 +33,10 @@ void load_shader(const char* namev, const char* namef, Shader & s)
     s = LoadShader(vbuff, fbuff);
 }
 
+void setCameraPosition(Shader shader, Vector3 v) 
+{
+    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &v, SHADER_UNIFORM_VEC3);
+}
 
 
 void PBR_SetAmbientColor (Color ambientColor, Shader & shader) 

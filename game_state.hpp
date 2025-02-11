@@ -20,22 +20,21 @@ struct GameState
     E_GameState NextState;
 };
 
+#define STATE_ENTER(name)   void name##_Start (GameContext & context) 
+#define STATE_EXIT(name)     void name##_Stop (GameContext & context) 
+#define STATE_UPDATE(name)  void name##_Update (GameContext & context) 
+#define STATE_RENDER(name)  void name##_Render (GameContext & context) 
 
-#define STATE_ENTER(name)   void name_##Start (GameContext & context) 
-#define STATE_EXIT(name)     void name_##Stop (GameContext & context) 
-#define STATE_UPDATE(name)  void name_##Update (GameContext & context) 
-#define STATE_RENDER(name)  void name_##Render (GameContext & context) 
-
-#define EXPORT_STATE(name) GameState name_##State { \
-      name_##Start, \
-      name_##Stop, \
-      name_##Update, \
-      name_##Render, \
+#define EXPORT_STATE(name) GameState name##_State { \
+      name##_Start, \
+      name##_Stop, \
+      name##_Update, \
+      name##_Render, \
       E_GameState::GS_COUNT \
 }\
 
-#define GET_STATE(name) name_##State
-#define DECLARE_STATE(name) extern GameState name_##State
+#define GET_STATE(name) name##_State
+#define DECLARE_STATE(name) extern GameState name##_State
 
 void request_state_change(E_GameState newState) ;
 void register_state(E_GameState name, GameState *state);

@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "cmath": "cpp",
-        "*.mesh": "cpp"
+        "*.mesh": "cpp",
+        "typeinfo": "cpp"
     }
 }

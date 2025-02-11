@@ -1,6 +1,5 @@
 #include "g_main.hpp"
 #include "scratch.hpp"
-
 const int screenWidth = 1600;
 const int screenHeight = 900;
 #define SCRATCH_SIZE 4 * 1024 * 1024
@@ -12,12 +11,10 @@ unsigned int used = 0;
 
 int main(void)
 {
-    SetTraceLogLevel(LOG_ERROR);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);    // Window configuration flags    
     InitWindow(screenWidth, screenHeight, "Josel Cioppa Game");   
     SetExitKey(KEY_NULL);   
-    SetTargetFPS(120);
-                  
+    SetTargetFPS(120);                  
     scratch_reset();
  
     GameContext mainContext;
